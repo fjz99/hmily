@@ -4,6 +4,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.lang.NonNull;
 
 import java.lang.reflect.Proxy;
 
@@ -12,7 +13,7 @@ import java.lang.reflect.Proxy;
  */
 public class FeignBeanPostProcessor implements BeanPostProcessor {
     @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    public Object postProcessAfterInitialization(Object bean, @NonNull String beanName) throws BeansException {
         //代理Feign
         Class<?> beanClass = bean.getClass ();
         //findAnnotation保证找到接口的注解

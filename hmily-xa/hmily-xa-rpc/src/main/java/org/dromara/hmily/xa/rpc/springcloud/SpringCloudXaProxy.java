@@ -1,64 +1,60 @@
 package org.dromara.hmily.xa.rpc.springcloud;
 
 
+import feign.Client;
+import feign.Request;
+import feign.RequestTemplate;
+import feign.Response;
 import org.dromara.hmily.core.context.HmilyContextHolder;
 import org.dromara.hmily.core.context.HmilyTransactionContext;
 import org.dromara.hmily.core.context.XaParticipant;
 import org.dromara.hmily.xa.rpc.RpcXaProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.lang.NonNull;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Map;
 
-public class SpringCloudXaProxy implements RpcXaProxy {
-    private final Logger logger = LoggerFactory.getLogger (SpringCloudXaProxy.class);
+public class SpringCloudXaProxy implements RpcXaProxy, BeanFactoryAware {
+    private static final Logger LOGGER = LoggerFactory.getLogger (SpringCloudXaProxy.class);
 
-    private final Method method;
-    private final Object target;
-    private final Object[] args;
+    private final Client client = new Client.Default (null, null);
+    //    private final Method method;
+//    private final Object target;
+//    private final Object[] args;
     private HmilyTransactionContext context;
-
-    public SpringCloudXaProxy(Method method, Object target, Object[] args) {
-        this.method = method;
-        this.target = target;
-        this.args = args;
-    }
-
-    public Method getMethod() {
-        return method;
-    }
-
-    public Object getTarget() {
-        return target;
-    }
-
-    public Object[] getArgs() {
-        return args;
-    }
+    private RequestTemplate requestTemplate;
+    private Request.Options options;
 
     @Override
     public Integer cmd(XaCmd cmd, Map<String, Object> params) {
         if (cmd == null) {
-            logger.warn ("cmd is null");
+            LOGGER.warn ("cmd is null");
             return NO;
         }
 
         context.getXaParticipant ().setCmd (cmd.name ());
         HmilyContextHolder.set (context);
+//        RpcMediator.getInstance ().transmit (requestTemplate::header, context);
         try {
-            method.invoke (target, args);
-            return YES;
+//            method.invoke (target, args);
+
+            Response response = client.execute (requestTemplate.request (), options);//会触发interceptor
+            if (response.status () == 200) {
+                return YES;
+            }
         } catch (Throwable e) {
-            logger.error ("cmd {} err", cmd.name (), e);
-            return EXC;
+            LOGGER.error ("cmd {} err", cmd.name (), e);
         }
+        return EXC;
     }
 
     @Override
     public int getTimeout() {
-        return 0;//TODO
+        return options.readTimeoutMillis ();
     }
 
     @Override
@@ -66,17 +62,23 @@ public class SpringCloudXaProxy implements RpcXaProxy {
         context = new HmilyTransactionContext ();
         context.setXaParticipant (participant);
         HmilyContextHolder.set (context);
+        FeignRequestInterceptor.registerXaProxy (context.getTransId (), this);
+    }
+
+    public void setRequestTemplate(RequestTemplate requestTemplate) {
+        this.requestTemplate = requestTemplate;
     }
 
     @Override
     public boolean equals(RpcXaProxy xaProxy) {
         if (xaProxy instanceof SpringCloudXaProxy) {
-            SpringCloudXaProxy proxy = (SpringCloudXaProxy) xaProxy;
-            return proxy.getMethod ().equals (getMethod ()) &&
-                    proxy.getTarget ().equals (getTarget ()) &&
-                    Arrays.equals (proxy.getArgs (), getArgs ());
+            return ((SpringCloudXaProxy) xaProxy).requestTemplate.url ().equals (requestTemplate.url ());
         }
         return false;
     }
 
+    @Override
+    public void setBeanFactory(@NonNull BeanFactory beanFactory) throws BeansException {
+        options = beanFactory.getBean (Request.Options.class);
+    }
 }

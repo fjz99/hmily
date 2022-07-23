@@ -13,8 +13,8 @@ import java.lang.reflect.Method;
 
 public class SpringCloudXaResource extends RpcResource {
 
-    public SpringCloudXaResource(Method method, Object target, Object[] args) {
-        super (new SpringCloudXaProxy (method, target, args));
+    public SpringCloudXaResource() {
+        super (new SpringCloudXaProxy ());
     }
 
     @Override

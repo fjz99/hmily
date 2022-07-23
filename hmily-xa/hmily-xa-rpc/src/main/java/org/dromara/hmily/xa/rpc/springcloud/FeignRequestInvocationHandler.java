@@ -39,7 +39,7 @@ public class FeignRequestInvocationHandler implements InvocationHandler {
 
         Transaction transaction = TransactionManagerImpl.INST.getTransaction ();
         if (transaction instanceof TransactionImpl) {
-            XAResource resource = new SpringCloudXaResource (method, target, args);
+            XAResource resource = new SpringCloudXaResource ();
             try {
                 ((TransactionImpl) transaction).doEnList (resource, XAResource.TMJOIN);
             } catch (SystemException | RollbackException e) {
