@@ -40,9 +40,10 @@ import java.util.Collection;
 @HmilySPI("default")
 @Slf4j
 public class DefaultSQLRevertEngine implements HmilySQLRevertEngine {
-    
+
     @Override
     public boolean revert(final HmilyParticipantUndo participantUndo) throws SQLRevertException {
+        // 对某个连接对应的数据库进行回滚
         try (Connection connection = HmilyResourceManager.get(participantUndo.getResourceId()).getTargetDataSource().getConnection()) {
             return doRevertInTransaction(connection, participantUndo.getDataSnapshot().getTuples());
         } catch (final SQLException ex) {
@@ -50,7 +51,7 @@ public class DefaultSQLRevertEngine implements HmilySQLRevertEngine {
             return false;
         }
     }
-    
+
     private boolean doRevertInTransaction(final Connection connection, final Collection<HmilySQLTuple> tuples) throws SQLException {
         connection.setAutoCommit(false);
         for (HmilySQLTuple tuple : tuples) {
@@ -62,7 +63,8 @@ public class DefaultSQLRevertEngine implements HmilySQLRevertEngine {
         connection.commit();
         return true;
     }
-    
+
+    // 执行undo log
     private int executeUpdate(final Connection connection, final RevertSQLUnit unit) {
         log.debug("TAC-revert-sql :::: {}", unit.toString());
         try (PreparedStatement preparedStatement = connection.prepareStatement(unit.getSql())) {

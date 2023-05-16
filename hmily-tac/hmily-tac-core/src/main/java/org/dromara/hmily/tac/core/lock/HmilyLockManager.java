@@ -32,12 +32,12 @@ import java.util.Optional;
  */
 @Slf4j
 public enum HmilyLockManager {
-    
+
     /**
      * Instance hmily lock manager.
      */
     INSTANCE;
-    
+
     /**
      * Try acquire locks.
      *
@@ -50,13 +50,14 @@ public enum HmilyLockManager {
             if (hmilyLock.isPresent()) {
                 String message = String.format("current record [%s] has locked by transaction:[%s]", each.getLockId(), hmilyLock.get().getTransId());
                 log.error(message);
+                //事务并发冲突直接抛异常。。我感觉可以超时等待的
                 throw new HmilyLockConflictException(message);
             }
         }
         HmilyRepositoryStorage.writeHmilyLocks(hmilyLocks);
         hmilyLocks.forEach(lock -> HmilyLockCacheManager.getInstance().cacheHmilyLock(lock.getLockId(), lock));
     }
-    
+
     /**
      * Release locks.
      *
