@@ -249,7 +249,7 @@ public class SubCoordinator implements Resource {
     }
 
     @Override
-    public void onePhaseCommit() throws TransactionRolledbackException, RemoteException {
+    public void onePhaseCommit() throws RemoteException {
         if (state == XaState.STATUS_ROLLEDBACK) {
             try {
                 transaction.doDeList(XAResource.TMSUCCESS);

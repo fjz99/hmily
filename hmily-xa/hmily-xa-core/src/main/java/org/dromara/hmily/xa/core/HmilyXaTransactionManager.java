@@ -169,6 +169,11 @@ public class HmilyXaTransactionManager implements TransactionManager {
         if (threadTransaction != null) {
             TransactionImpl tx = (TransactionImpl) rct;
             rct = tx.createSubTransaction();
+            //线程本地的嵌套事务的话，会只有一个主协调者，然后list中存放每个从协调者，即使多级嵌套也是这样（即多级嵌套会把多层规整成一层）
+            //根节点也有从协调者
+            //最终事务提交的时候，会调用主协调者进行提交
+            //这里不考虑事务的传播级别的问题，对于嵌套事务，spring会自动在最后提交
+            //这就代表hmily的事务隔离级别不支持NETSED，只能用REQUIRED
         } else {
             boolean hasSuper = false;
             HmilyTransactionContext context = HmilyContextHolder.get();

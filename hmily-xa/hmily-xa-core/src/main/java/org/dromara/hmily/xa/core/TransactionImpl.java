@@ -83,17 +83,17 @@ public class TransactionImpl implements Transaction, TimerRemovalListener<Resour
         context = impl.getContext();
         this.delistResourceList = null;
         hasSuper = impl.hasSuper;
-        subCoordinator(true, true);
+        subCoordinator(true, true);// 如果说当前上下文有协调者的话，说明这是一个本地线程的嵌套事务
     }
 
     @Override
     public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException, IllegalStateException, SystemException {
-        Finally oneFinally = context.getOneFinally();
+        Finally oneFinally = context.getOneFinally();//一直不是null，值一直是Coordinator
         if (oneFinally != null) {
             try {
                 if (getStatus() == XaState.STATUS_MARKED_ROLLBACK.getState()) {
                     oneFinally.rollback();
-                } else if (hasSuper) {
+                } else if (hasSuper) { // 有super就不提交
                     doDeList(XAResource.TMSUCCESS);
                 } else {
                     oneFinally.commit();
@@ -273,7 +273,7 @@ public class TransactionImpl implements Transaction, TimerRemovalListener<Resour
                 coordinator = new Coordinator(xid, this.hasSuper);
                 context.setCoordinator(coordinator);
                 if (context.getOneFinally() == null) {
-                    context.setOneFinally(coordinator);
+                    context.setOneFinally(coordinator);//只有协调者才是one finally
                 }
                 coordinator.getTimer().put(coordinator, 30000, TimeUnit.SECONDS);
                 coordinator.getTimer().addRemovalListener(this);
