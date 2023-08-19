@@ -29,5 +29,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>hmily-demo-tac-dubbo</module>
+        <module>hmily-demo-tac-springcloud</module>
     </modules>
 </project>
